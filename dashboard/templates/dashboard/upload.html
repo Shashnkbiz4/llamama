@@ -1,0 +1,198 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block css %}
+    <link rel="stylesheet" href="{% static 'assets/libs/dropzone/dropzone.css' %}" type="text/css" />
+    <link rel="stylesheet" href="{% static 'assets/css/dragdrop.css' %}" type="text/css" />
+
+    <!-- Filepond css -->
+    <link rel="stylesheet" href="{% static 'assets/libs/filepond/filepond.min.css' %}" type="text/css" />
+    <link rel="stylesheet" href="{% static 'assets/libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.css' %}">
+
+
+{% endblock css %}
+
+
+
+
+
+
+{% block content %}
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0">File Upload</h4>
+
+            <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                    <li class="breadcrumb-item"><a href="javascript: void(0);">AI Upload</a></li>
+                    <li class="breadcrumb-item active">8879 Upload</li>
+                </ol>
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- Single File Upload -->
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">Single File Upload</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Kindly Upload your PDF to get real time analysis</p>
+                <form method="post" enctype="multipart/form-data" id="upload-form">
+                    {% csrf_token %}
+                    <div class="drop-zone">
+                        <div class="drop-zone__prompt">
+                            <i class="fas fa-file-upload"></i>
+                            <p>Drag and drop a PDF file here, or click to select a file</p>
+                        </div>
+                        <input type="file" name="file" id="file-input" accept=".pdf" required>
+                        <div class="file-preview">
+                            <div class="file-info">
+                                <span class="file-name"></span>
+                                <span class="file-size"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="upload-btn">
+                        <i class="fas fa-upload"></i> Upload
+                    </button>
+                </form>
+                <div class="output-box" id="output-box" style="display: none;">
+                    <h2>Output</h2>
+                    <div class="output-content">
+                        <div class="output-item">
+                            <strong>PDF Type:</strong> <span id="pdf-type"></span>
+                        </div>
+                        <div class="output-item">
+                            <strong>Client ID:</strong> <span id="client-id"></span>
+                        </div>
+                        <div class="output-item">
+                            <strong>Year:</strong> <span id="year"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+{% endblock content %}
+
+
+
+
+
+
+
+{% block script %}
+<script src="{% static 'assets/libs/dropzone/dropzone-min.js' %}"></script>
+<!-- filepond js -->
+<script src="{% static 'assets/libs/filepond/filepond.min.js' %}"></script>
+<script src="{% static 'assets/libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.js' %}"></script>
+<script src="{% static 'assets/libs/filepond-plugin-file-validate-size/filepond-plugin-file-validate-size.min.js' %}"></script>
+<script src="{% static 'assets/libs/filepond-plugin-image-exif-orientation/filepond-plugin-image-exif-orientation.min.js' %}"></script>
+<script src="{% static 'assets/libs/filepond-plugin-file-encode/filepond-plugin-file-encode.min.js' %}"></script>
+
+<script src="{% static 'assets/js/pages/form-file-upload.init.js' %}"></script>
+{% comment %} <script src="{% static 'assets/js/singledrop.js' %}"></script> {% endcomment %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const fileInput = document.getElementById('file-input');
+        const fileName = document.querySelector('.file-name');
+        const fileSize = document.querySelector('.file-size');
+        const dropZone = document.querySelector('.drop-zone');
+    
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                fileName.textContent = file.name;
+                fileSize.textContent = `(${formatFileSize(file.size)})`;
+            } else {
+                fileName.textContent = '';
+                fileSize.textContent = '';
+            }
+        });
+    
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drop-zone--over');
+        });
+    
+        ['dragleave', 'dragend'].forEach(type => {
+            dropZone.addEventListener(type, () => {
+                dropZone.classList.remove('drop-zone--over');
+            });
+        });
+    
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drop-zone--over');
+            fileInput.files = e.dataTransfer.files;
+            const file = fileInput.files[0];
+            fileName.textContent = file.name;
+            fileSize.textContent = `(${formatFileSize(file.size)})`;
+        });
+    
+        function formatFileSize(bytes) {
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            let unitIndex = 0;
+            let size = bytes;
+    
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+    
+            return `${size.toFixed(2)} ${units[unitIndex]}`;
+        }
+    
+        document.getElementById('upload-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+    
+            fetch("{% url 'upload' %}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    document.getElementById('pdf-type').textContent = data.pdf_type;
+                    document.getElementById('client-id').textContent = data.client_id;
+                    document.getElementById('year').textContent = data.year;
+                    document.getElementById('output-box').style.display = 'block';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+    
+</script>
+
+{% endblock script %}
+
+
+
+
+

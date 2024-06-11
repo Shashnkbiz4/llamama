@@ -1,0 +1,292 @@
+{% extends "base/base.html" %}
+{% load static %}
+{% block css %}
+<link rel="stylesheet" href="{% static 'assets/css/multidropdrop.css' %}" type="text/css" />
+
+{% endblock css %}
+
+
+
+
+{% block content %}
+<!-- Multiple File Upload -->
+<div class="row mt-2">
+    <div class="col-lg-12">
+        <div class="justify-content-between d-flex align-items-center mb-3">
+            <h5 class="mb-0 pb-1 text-decoration-underline">Multiple AI PDF Upload</h5>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title mb-0">Multiple File Upload</h4>
+                    </div>
+                    <div class="upload-box">
+                        <h2>Upload PDF Files</h2>
+                        <input type="file" id="fileInput" multiple onchange="displaySelectedFiles()" accept="application/pdf">
+                        <label for="fileInput">Choose PDF Files</label>
+                        <ul id="fileList" class="file-list"></ul>
+                        <div class="progress-container" id="progressContainer"></div>
+                        <button class="submit-button" onclick="uploadFiles()">Submit</button>
+                    </div>
+                
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock content %}
+
+
+
+{% block script %}
+
+{% comment %} <script src="{% static 'assets/js/multiupload.js' %}"></script> {% endcomment %}
+{% comment %} 
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function displaySelectedFiles() {
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+        for (let i = 0; i < fileInput.files.length; i++) {
+            const li = document.createElement('li');
+            li.textContent = fileInput.files[i].name;
+            fileList.appendChild(li);
+        }
+        document.querySelector('.progress-container').style.display = 'block';
+        document.querySelector('.submit-button').style.display = 'none';
+    }
+
+    function uploadFiles() {
+        const fileInput = document.getElementById('fileInput');
+        const files = fileInput.files;
+        const csrfToken = getCookie('csrftoken');
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const formData = new FormData();
+            formData.append('files', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/dashboard/multiple-upload/', true);
+            xhr.setRequestHeader('X-CSRFToken', csrfToken);
+
+            xhr.upload.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    const progressBar = document.getElementById('progressBar' + i);
+                    progressBar.style.width = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status == 200) {
+                    const progressBar = document.getElementById('progressBar' + i);
+                    progressBar.style.width = '100%';
+                    if (checkAllProgressComplete()) {
+                        document.querySelector('.submit-button').style.display = 'block';
+                    }
+                } else {
+                    alert('File upload failed');
+                }
+            };
+
+            const progressBarContainer = document.createElement('div');
+            progressBarContainer.className = 'progress-bar-container';
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            progressBar.id = 'progressBar' + i;
+            progressBarContainer.appendChild(progressBar);
+            document.getElementById('progressContainer').appendChild(progressBarContainer);
+
+            xhr.send(formData);
+        }
+    }
+
+    function checkAllProgressComplete() {
+        const progressBars = document.querySelectorAll('.progress-bar');
+        for (let i = 0; i < progressBars.length; i++) {
+            if (progressBars[i].style.width !== '100%') {
+                return false;
+            }
+        }
+        return true;
+    }
+</script> {% endcomment %}
+
+
+{% comment %} <script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function displaySelectedFiles() {
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+        for (let i = 0; i < fileInput.files.length; i++) {
+            const li = document.createElement('li');
+            li.textContent = fileInput.files[i].name;
+            fileList.appendChild(li);
+
+            const progressBarContainer = document.createElement('div');
+            progressBarContainer.className = 'progress-bar-container';
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            progressBar.id = 'progressBar' + i;
+            progressBarContainer.appendChild(progressBar);
+            fileList.appendChild(progressBarContainer);
+        }
+        document.querySelector('.progress-container').style.display = 'block';
+        document.querySelector('.submit-button').style.display = 'block';
+    }
+
+    function uploadFiles() {
+        const fileInput = document.getElementById('fileInput');
+        const files = fileInput.files;
+        const csrfToken = getCookie('csrftoken');
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const formData = new FormData();
+            formData.append('files', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/dashboard/multiple-upload/', true);
+            xhr.setRequestHeader('X-CSRFToken', csrfToken);
+
+            xhr.upload.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    const progressBar = document.getElementById('progressBar' + i);
+                    progressBar.style.width = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status == 200) {
+                    const progressBar = document.getElementById('progressBar' + i);
+                    progressBar.style.width = '100%';
+                } else {
+                    alert('File upload failed');
+                }
+            };
+
+            xhr.send(formData);
+        }
+    }
+</script> {% endcomment %}
+
+
+
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function displaySelectedFiles() {
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+        for (let i = 0; i < fileInput.files.length; i++) {
+            const li = document.createElement('li');
+            li.textContent = fileInput.files[i].name;
+            fileList.appendChild(li);
+
+            const progressBarContainer = document.createElement('div');
+            progressBarContainer.className = 'progress-bar-container';
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            progressBar.id = 'progressBar' + i;  // Ensure unique ID for each progress bar
+            progressBarContainer.appendChild(progressBar);
+            fileList.appendChild(progressBarContainer);
+        }
+        document.querySelector('.progress-container').style.display = 'block';
+        document.querySelector('.submit-button').style.display = 'block';
+    }
+
+    function uploadFiles() {
+        const fileInput = document.getElementById('fileInput');
+        const files = fileInput.files;
+        const csrfToken = getCookie('csrftoken');
+        let filesUploaded = 0;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const formData = new FormData();
+            formData.append('files', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/dashboard/multiple-upload/', true);
+            xhr.setRequestHeader('X-CSRFToken', csrfToken);
+
+            xhr.upload.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    const progressBar = document.getElementById('progressBar' + i);
+                    progressBar.style.width = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status == 200) {
+                    filesUploaded++;
+                    if (filesUploaded === files.length) {
+                        setTimeout(function() {
+                            document.querySelector('.progress-container').style.display = 'none'; // Hide progress container
+                            document.getElementById('fileList').innerHTML = ''; // Clear file list
+                        }, 500); // Delay hiding progress container to ensure all progress bars are fully updated
+                    }
+                } else {
+                    alert('File upload failed');
+                }
+            };
+
+            xhr.send(formData);
+        }
+    }
+</script>
+
+
+{% endblock script %}
